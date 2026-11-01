@@ -43,7 +43,7 @@ public class Blocking {
 	AtomicInteger tasks_finished;
 	
 	public Blocking(){
-		tasks_finished = new AtomicInteger(0);
+		tasks_finished = new AtomicInteger(0);  //AtomicInteger provides thread-safe operations, while updating the same int value
 	}
 	
 	void executeSQL(String sql, Connection con){
@@ -65,16 +65,21 @@ public class Blocking {
 			executeSQL("CREATE TABLE blocking_data ( data_id integer primary key, data_value float, modified_by integer);",con);
 			
 			PreparedStatement ps;
-			con.setAutoCommit(false);
+			con.setAutoCommit(false); //Setting autoCommit to false allows multiple database operations to be grouped into one transaction.
 			ps = con.prepareStatement("INSERT INTO blocking_data VALUES (?, ?, ?)",ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
 			
-			for(int i=0;i<num_tuple;i++){
+			for(int i=0;i<num_tuple;i++){ // num_tuple
 				ps.setInt(1, i);
+				//System.out.println("prepared statement --" + i + ps);
 				ps.setDouble(2,rand.nextDouble()*max_value);
+				//System.out.println("prepared statement --" + i + ps);
 				ps.setInt(3, 0);
+				//System.out.println("prepared statement --" + i + ps);
 				ps.addBatch();
 				ps.clearParameters();
 			}
+
+
 			
 			int[] results = ps.executeBatch();
 			con.commit();
@@ -92,10 +97,11 @@ public class Blocking {
 		
 		//Create task and their queries
 		ArrayList<Blocking.Blocker> my_tasks = new ArrayList<Blocking.Blocker>(num_taks);
+		//System.out.println("my tasks" + my_tasks);
 		for(int task=0;task<num_taks;task++){
-			my_tasks.add(b.new Blocker(task));
+			my_tasks.add(b.new Blocker(task)); //This creates 30 Blocker objects with IDs from 0 to 29.
 		}
-		
+		//System.out.println("my tasks" + my_tasks);
 		//Execute tasks
 		ThreadPoolExecutor executor = 
 				  (ThreadPoolExecutor) Executors.newFixedThreadPool(4);//XXX - Do not change the number of threads used
@@ -109,7 +115,7 @@ public class Blocking {
 		//wait for the tasks to finish
 		while(!executor.isTerminated()) {
 			try {
-				Thread.sleep(100);
+				Thread.sleep(100); //Keep waiting every 0.1s until the executor is completely done.
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
@@ -133,7 +139,9 @@ public class Blocking {
 			this.stop_range  = new double[num_queries_per_task];
 			for(int q=0;q<num_queries_per_task;q++) {
 				stop_range[q]  = rand.nextDouble()*max_value;
-				start_range[q] = rand.nextDouble()*stop_range[q];
+				//System.out.println("task" + id + "stop_range[q] before" + stop_range[q]);
+				start_range[q] = rand.nextDouble()*stop_range[q]; // stop_range * (0-1)
+				//System.out.println("task" + id + "start_range[q] after"  + start_range[q]);
 			}
 		}
 		
@@ -142,13 +150,13 @@ public class Blocking {
 			Connection con=null;//XXX - Yes there needs to be a separate Connection per blocking taks. Otherwise strange things can happen
 			con = ConnectionFactory.getDefaultParameterConnection(ConnectionFactory.POSTGRESQL);//XXX This is the class you need to create, but does not have to be in the Repo
 			PreparedStatement ps;
-			
-			try {	
+
+			try {
 				con.setAutoCommit(false);
-				con.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+				con.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED); //It prevents a transaction from reading uncommitted changes made by another transaction.
 				int q = 0;
 				ps = con.prepareStatement("UPDATE blocking_data SET data_value = ?,  modified_by = "+task+" WHERE data_value >= ? AND data_value <= ?;",ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
-				
+
 				while(q<num_queries_per_task) {//I want to execute num_queries_per_task update queries
 					ps.setDouble(1, (float) (rand.nextDouble()*max_value));//some value, which one is not important.
 					ps.setDouble(2, start_range[q]);
@@ -156,7 +164,7 @@ public class Blocking {
 					//System.out.println("Started query "+q+" task "+task+" Executing "+ps);
 					ps.execute();
 					q++;
-				}		
+				}
 				con.commit();
 				int num_finished = tasks_finished.incrementAndGet();
 				con.close();
@@ -164,6 +172,6 @@ public class Blocking {
 			} catch (SQLException e) {
 				System.err.println("Task "+task+" "+e.getMessage());
 			}
-		}	
+		}
 	}
 }
