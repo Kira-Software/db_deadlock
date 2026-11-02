@@ -70,11 +70,11 @@ public class Blocking {
 			
 			for(int i=0;i<num_tuple;i++){ // num_tuple
 				ps.setInt(1, i);
-				//System.out.println("prepared statement --" + i + ps);
+
 				ps.setDouble(2,rand.nextDouble()*max_value);
-				//System.out.println("prepared statement --" + i + ps);
+
 				ps.setInt(3, 0);
-				//System.out.println("prepared statement --" + i + ps);
+
 				ps.addBatch();
 				ps.clearParameters();
 			}
@@ -97,11 +97,11 @@ public class Blocking {
 		
 		//Create task and their queries
 		ArrayList<Blocking.Blocker> my_tasks = new ArrayList<Blocking.Blocker>(num_taks);
-		//System.out.println("my tasks" + my_tasks);
+
 		for(int task=0;task<num_taks;task++){
 			my_tasks.add(b.new Blocker(task)); //This creates 30 Blocker objects with IDs from 0 to 29.
 		}
-		//System.out.println("my tasks" + my_tasks);
+
 		//Execute tasks
 		ThreadPoolExecutor executor = 
 				  (ThreadPoolExecutor) Executors.newFixedThreadPool(4);//XXX - Do not change the number of threads used
@@ -139,9 +139,9 @@ public class Blocking {
 			this.stop_range  = new double[num_queries_per_task];
 			for(int q=0;q<num_queries_per_task;q++) {
 				stop_range[q]  = rand.nextDouble()*max_value;
-				//System.out.println("task" + id + "stop_range[q] before" + stop_range[q]);
+
 				start_range[q] = rand.nextDouble()*stop_range[q]; // stop_range * (0-1)
-				//System.out.println("task" + id + "start_range[q] after"  + start_range[q]);
+
 			}
 		}
 		
@@ -161,7 +161,7 @@ public class Blocking {
 					ps.setDouble(1, (float) (rand.nextDouble()*max_value));//some value, which one is not important.
 					ps.setDouble(2, start_range[q]);
 					ps.setDouble(3, stop_range[q]);
-					//System.out.println("Started query "+q+" task "+task+" Executing "+ps);
+
 					ps.execute();
 					q++;
 				}
